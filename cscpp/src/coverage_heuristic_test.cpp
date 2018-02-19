@@ -57,10 +57,10 @@ int main( int argc, char **  argv)
 
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr originalCloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::io::loadPCDFile<pcl::PointXYZ> (ros::package::getPath("cscpp")+"/pcd/hoa_translated_densed_scaled.pcd", *originalCloudPtr);
+    pcl::io::loadPCDFile<pcl::PointXYZ> (ros::package::getPath("cscpp")+"/pcd/etihad_nowheels_nointernal_scaled_newdensed.pcd", *originalCloudPtr);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr coveredCloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
-    OcclusionCullingGPU occlusionCulling(nh,"hoa_translated_densed_scaled.pcd");
+    OcclusionCullingGPU occlusionCulling(nh,"etihad_nowheels_nointernal_scaled_newdensed.pcd");
 
     rviz_visual_tools::RvizVisualToolsPtr visualTools;
     visualTools.reset(new rviz_visual_tools::RvizVisualTools("map","/cscpp_visualisation"));
@@ -70,12 +70,12 @@ int main( int argc, char **  argv)
     ros::Time timer_start = ros::Time::now();
     geometry_msgs::Pose gridStartPose;
     geometry_msgs::Vector3 gridSize;
-    gridStartPose.position.x = -1 ;//-18
-    gridStartPose.position.y = -4 ;//-25
+    gridStartPose.position.x = -18 ;//-18
+    gridStartPose.position.y = -25 ;//-25
     gridStartPose.position.z = 1 ;//1
-    gridSize.x = 10;//36
-    gridSize.y = 14;//50
-    gridSize.z = 21;//15
+    gridSize.x = 36;//36
+    gridSize.y = 50;//50
+    gridSize.z = 15;//15
 
     PathPlanner * pathPlanner;
     Pose start(3.0,-34.5,9,DTOR(0.0));
@@ -103,9 +103,9 @@ int main( int argc, char **  argv)
 
     //choose the coverage heuristic you want and set the params and assign it to the path planner
     //******************************************************************
-    double coverageTolerance=1.0, targetCov=20.0;
-    std::string collisionCheckModelPath = ros::package::getPath("cscpp") + "/mesh/hoa_translated_new.obj"; //bridge_translated, burj_arab_scaled
-    std::string occlusionCullingModelName = "hoa_translated_densed_scaled.pcd";//bridge_translated_densed, burj_arab_scaled_densed
+    double coverageTolerance=1.0, targetCov=10.0;
+    std::string collisionCheckModelPath = ros::package::getPath("cscpp") + "/mesh/etihad_nowheels_nointernal_scaled_new.obj"; //bridge_translated, burj_arab_scaled
+    std::string occlusionCullingModelName = "etihad_nowheels_nointernal_scaled_newdensed.pcd";//bridge_translated_densed, burj_arab_scaled_densed
     CoveragePathPlanningHeuristic coveragePathPlanningHeuristic(nh,collisionCheckModelPath,occlusionCullingModelName,false, true, InfoGainVolumetricH);
     coveragePathPlanningHeuristic.setCoverageTarget(targetCov);
     coveragePathPlanningHeuristic.setCoverageTolerance(coverageTolerance);

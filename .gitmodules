@@ -1,0 +1,3 @@
+[submodule "sspp"]
+	path = sspp
+	url = https://github.com/kuri-kustar/sspp.git

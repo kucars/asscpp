@@ -185,7 +185,7 @@ pcl::VoxelGridOcclusionEstimationGPU::occlusionEstimationAll (std::vector<Eigen:
 __global__ void rayTraversalGPU(double *x, double*y, double*z,float * inverse_leaf_size_,float * leaf_size_,float * b_min_,int * min_b_,int * max_b_,float * b_max_,float * sensor_origin_,float * maxAcc,int * leaf_layout_, int leaf_layout_size, int * divb_mul_,int *occlusionFreePointsIndices, float* occlusionFreePointsEntropies, int* occlusionFreePointsCount,int numPoints)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    float vLiklihood = 1;
+    //float vLiklihood = 1;
     double DepthAcc, normDepthAcc ;
     float Io, voxelEntrobyIv;
     if(idx<numPoints)

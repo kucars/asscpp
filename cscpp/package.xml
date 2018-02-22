@@ -1,16 +1,11 @@
 <?xml version="1.0"?>
 <package>
   <name>cscpp</name>
-  <version>0.0.0</version>
+  <version>1.0.0</version>
   <description>The complex structure coverage path planning</description>
 
-
   <maintainer email="randa.almadhoun@gmail.com">kuri</maintainer>
-
-
   <license>BSD</license>
-
-
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
@@ -22,6 +17,8 @@
   <build_depend>eigen_conversions</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>visualization_msgs</build_depend>
+  <build_depend>sspp</build_depend>
+  
   <run_depend>roscpp</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>libpcl1</run_depend>
@@ -31,11 +28,11 @@
   <run_depend>eigen_conversions</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>visualization_msgs</run_depend>
-
+  <run_depend>sspp</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-
   </export>
+  
 </package>

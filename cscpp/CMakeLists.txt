@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project( cscpp )
 SET ( CMAKE_CXX_FLAGS "-frounding-math" )
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -18,11 +17,12 @@ find_package(catkin REQUIRED COMPONENTS
   sspp
   )
 
-find_package(PCL REQUIRED)
+# PCL causes issues with CUDA
+#find_package(PCL REQUIRED)
 find_package(Boost REQUIRED)
 find_package(octomap REQUIRED)
 # CGAL and its components
-find_package( CGAL QUIET COMPONENTS  )
+find_package(CGAL QUIET COMPONENTS)
 
 if ( NOT CGAL_FOUND )
   message(STATUS "This project requires the CGAL library, and will not be compiled.")
@@ -43,15 +43,10 @@ endif()
 
 
 #Cuda related Flags
-find_package(CUDA QUIET)
-#list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -O3")
-#list(APPEND CUDA_NVCC_FLAGS "-std=c++11;-O2;-DVERBOSE")
-#set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+#find_package(CUDA 8.0 REQUIRED EXACT)
+find_package(CUDA REQUIRED)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-include_directories(${PCL_INCLUDE_DIRS} /usr/local/cuda/include/ ${OPENMP_INCLUDE_DIRS})
+include_directories(${PCL_INCLUDE_DIRS} ${OPENMP_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
@@ -65,7 +60,6 @@ include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${rviz_visual_tools_INCLUDE_DIRS}
   ${OCTOMAP_INCLUDE_DIRS}
-#  /usr/local/cuda/include/
 )
 
 # add_library(fcl_test src/fcl_utility.cpp ) ##check if you still need it
@@ -78,37 +72,46 @@ target_link_libraries(frustum_culling ${catkin_LIBRARIES} -lgmp -lmpfr ${CGAL_LI
 add_library(occlusion_culling src/occlusion_culling.cpp)
 target_link_libraries(occlusion_culling frustum_culling voxel_grid_occlusion_estimation ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-
-
-
 if (CUDA_FOUND)
+  message(STATUS "CUDA Version: ${CUDA_VERSION_STRINGS}")
+  message(STATUS "CUDA Libararies: ${CUDA_LIBRARIES}")
+  set(
+    CUDA_NVCC_FLAGS
+    ${CUDA_NVCC_FLAGS};
+    -O3
+    -gencode arch=compute_30,code=sm_30
+    -gencode arch=compute_35,code=sm_35
+    -gencode arch=compute_50,code=[sm_50,compute_50]
+    -gencode arch=compute_52,code=[sm_52,compute_52]
+    #-gencode arch=compute_61,code=sm_61
+    #-gencode arch=compute_62,code=sm_62
+  )
+  
 ###libs that uses cuda
-	cuda_add_library(frustum_culling_gpu src/frustum_culling_gpu.cu )
-	cuda_add_library(voxel_grid_occlusion_estimation_gpu src/voxel_grid_occlusion_estimation_gpu.cu )
-	add_library(occlusion_culling_gpu src/occlusion_culling_gpu.cpp)
-	target_link_libraries(occlusion_culling_gpu frustum_culling_gpu voxel_grid_occlusion_estimation_gpu ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-	cuda_add_executable(test_cuda src/test_cuda.cu)
-      
+    cuda_add_library(frustum_culling_gpu src/frustum_culling_gpu.cu )
+    cuda_add_library(voxel_grid_occlusion_estimation_gpu src/voxel_grid_occlusion_estimation_gpu.cu )
+    add_library(occlusion_culling_gpu src/occlusion_culling_gpu.cpp)
+    target_link_libraries(occlusion_culling_gpu frustum_culling_gpu voxel_grid_occlusion_estimation_gpu ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+    cuda_add_executable(test_cuda src/test_cuda.cu)     
 
 ##coverage heuristic
-        add_library(CoverageHeuristic SHARED src/coverage_path_planning_heuristic.cpp)
-        target_link_libraries(CoverageHeuristic ${component_test_LIBRARIES} occlusion_culling_gpu ${OCTOMAP_LIBRARIES})
-        target_include_directories(CoverageHeuristic PUBLIC include ${catkin_INCLUDE_DIRS} /usr/local/cuda/include/)
+    add_library(CoverageHeuristic SHARED src/coverage_path_planning_heuristic.cpp)
+    target_link_libraries(CoverageHeuristic ${component_test_LIBRARIES} occlusion_culling_gpu ${OCTOMAP_LIBRARIES})
+    target_include_directories(CoverageHeuristic PUBLIC include ${catkin_INCLUDE_DIRS} /usr/local/cuda/include/)
         
-        add_executable(coverage_heuristic_test src/coverage_heuristic_test.cpp)
-        target_include_directories(coverage_heuristic_test PUBLIC include ${catkin_INCLUDE_DIRS} /usr/local/cuda/include/)
-        target_link_libraries(coverage_heuristic_test SSPathPlanner
-            -lgmp -lmpfr
-            ${CGAL_LIBRARY}
-            ${CGAL_Core_LIBRARY}
-            ${catkin_LIBRARIES}
-            ${PCL_LIBRARIES}
-            ${OCTOMAP_LIBRARIES}
-            ${cscpp_LIBRARIES}
-            occlusion_culling_gpu
-            ${rviz_visual_tools_LIBRARIES}
-            CoverageHeuristic
-            )
-
-   
+    add_executable(coverage_heuristic_test src/coverage_heuristic_test.cpp)
+    target_include_directories(coverage_heuristic_test PUBLIC include ${catkin_INCLUDE_DIRS} /usr/local/cuda/include/)
+    target_link_libraries(coverage_heuristic_test SSPathPlanner
+        -lgmp -lmpfr
+        ${CGAL_LIBRARY}
+        ${CGAL_Core_LIBRARY}
+        ${catkin_LIBRARIES}
+        ${PCL_LIBRARIES}
+        ${OCTOMAP_LIBRARIES}
+        ${cscpp_LIBRARIES}
+        occlusion_culling_gpu
+        ${rviz_visual_tools_LIBRARIES}
+        CoverageHeuristic
+        )
+        
 endif (CUDA_FOUND)

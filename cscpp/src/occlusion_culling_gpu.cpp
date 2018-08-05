@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 - 2017 by                                          *
+ *   Copyright (C) 2015 - 2018 by                                          *
  *      Tarek Taha, KURI  <tataha@tarektaha.com>                           *
  *      Randa Almadhoun   <randa.almadhoun@kustar.ac.ae>                   *
  *                                                                         *
@@ -36,8 +36,8 @@ OcclusionCullingGPU::OcclusionCullingGPU(ros::NodeHandle &n, std::string modelNa
 
    occlusionFreeCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
    FrustumCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
-   std::string path = ros::package::getPath("cscpp");
-   pcl::io::loadPCDFile<pcl::PointXYZ> (path+"/pcd/"+model, *cloud);
+   std::string path = ros::package::getPath("component_test");
+   pcl::io::loadPCDFile<pcl::PointXYZ> (path+"/src/pcd/"+model, *cloud);
    cloudCopy->points = cloud->points;
    voxelRes = 0.5f;
    OriginalVoxelsSize=0.0;
@@ -74,20 +74,78 @@ OcclusionCullingGPU::OcclusionCullingGPU(ros::NodeHandle &n, std::string modelNa
    fc.setVerticalFOV (45);
    fc.setHorizontalFOV (58);
    fc.setNearPlaneDistance (0.7);
-   fc.setFarPlaneDistance (6);
+   fc.setFarPlaneDistance (6.0);
 
-   minAccuracyError = false;
+   AccuracyMaxSet = false;
 }
+OcclusionCullingGPU::OcclusionCullingGPU(ros::NodeHandle &n, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloudPtr):
+    nh(n),
+    fc(true)
+{
+   fov_pub = n.advertise<visualization_msgs::MarkerArray>("fov", 10);
+   cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
+   cloudCopy = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
+   filtered_cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
+
+   occlusionFreeCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
+   FrustumCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
+   cloud->points = cloudPtr->points;
+   cloudCopy->points = cloud->points;
+   
+   voxelRes = 0.5;
+   frame_id = "world";
+   OriginalVoxelsSize=0.0;
+   id=0.0;
+   voxelFilterOriginal.setInputCloud (cloud);
+   voxelFilterOriginal.setLeafSize (voxelRes, voxelRes, voxelRes);
+   voxelFilterOriginal.initializeVoxelGrid();
+   min_b1 = voxelFilterOriginal.getMinBoxCoordinates ();
+   max_b1 = voxelFilterOriginal.getMaxBoxCoordinates ();
+   for (int kk = min_b1.z (); kk <= max_b1.z (); ++kk)
+   {
+       for (int jj = min_b1.y (); jj <= max_b1.y (); ++jj)
+       {
+           for (int ii = min_b1.x (); ii <= max_b1.x (); ++ii)
+           {
+               Eigen::Vector3i ijk1 (ii, jj, kk);
+               int index1 = voxelFilterOriginal.getCentroidIndexAt (ijk1);
+               if(index1!=-1)
+               {
+                   OriginalVoxelsSize++;
+               }
+
+           }
+       }
+   }
+
+   pcl::VoxelGrid<pcl::PointXYZ> voxelgrid;
+   voxelgrid.setInputCloud (cloud);
+   voxelgrid.setLeafSize (0.5f, 0.5f, 0.5f);
+   voxelgrid.filter (*filtered_cloud);
+
+   fc.setInputCloud (cloud);
+   fc.setVerticalFOV (45);
+   fc.setHorizontalFOV (58);
+   fc.setNearPlaneDistance (0.7);
+   fc.setFarPlaneDistance (6.0);
+   
+   AccuracyMaxSet = false;
+
+}
+
 OcclusionCullingGPU::OcclusionCullingGPU(std::string modelName):
     model(modelName),
     fc(true)
 {
     cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
     filtered_cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
+    cloudCopy = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
     FrustumCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
 
-    std::string path = ros::package::getPath("cscpp");
-    pcl::io::loadPCDFile<pcl::PointXYZ> (path+"/pcd/"+model, *cloud);
+    std::string path = ros::package::getPath("component_test");
+    pcl::io::loadPCDFile<pcl::PointXYZ> (path+"/src/pcd/"+model, *cloud);
+    cloudCopy->points = cloud->points;   
+    
     voxelRes = 0.5f;
     OriginalVoxelsSize=0.0;
     id=0.0;
@@ -124,7 +182,7 @@ OcclusionCullingGPU::OcclusionCullingGPU(std::string modelName):
     fc.setNearPlaneDistance (0.7);
     fc.setFarPlaneDistance (6.0);
 
-    minAccuracyError = false;
+    AccuracyMaxSet = false;
 }
 OcclusionCullingGPU::OcclusionCullingGPU():
     model(NULL),
@@ -132,10 +190,13 @@ OcclusionCullingGPU::OcclusionCullingGPU():
 {
     cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
     filtered_cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
+    cloudCopy = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
     FrustumCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
 
-    std::string path = ros::package::getPath("cscpp");
-    pcl::io::loadPCDFile<pcl::PointXYZ> (path+"/pcd/scaled_desktop.pcd", *cloud);
+    std::string path = ros::package::getPath("component_test");
+    pcl::io::loadPCDFile<pcl::PointXYZ> (path+"/src/pcd/scaled_desktop.pcd", *cloud);
+    cloudCopy->points = cloud->points;
+    
     voxelRes = 0.5f;
     OriginalVoxelsSize=0.0;
     id=0.0;
@@ -172,10 +233,31 @@ OcclusionCullingGPU::OcclusionCullingGPU():
     fc.setNearPlaneDistance (0.7);
     fc.setFarPlaneDistance (6.0);
 
-    minAccuracyError = false;
+    AccuracyMaxSet = false;
 }
 OcclusionCullingGPU::~OcclusionCullingGPU()
 {
+}
+
+bool OcclusionCullingGPU::contains(pcl::PointCloud<pcl::PointXYZ> c, pcl::PointXYZ p) {
+    pcl::PointCloud<pcl::PointXYZ>::iterator it = c.begin();
+    for (; it != c.end(); ++it) {
+        if (it->x == p.x && it->y == p.y && it->z == p.z)
+            return true;
+    }
+    return false;
+}
+
+//c2 the cloud that you want to compare with the original cloud in the occlusion culling
+pcl::PointCloud<pcl::PointXYZ> OcclusionCullingGPU::pointsDifference(pcl::PointCloud<pcl::PointXYZ> c2) {
+    pcl::PointCloud<pcl::PointXYZ> inter;
+    pcl::PointCloud<pcl::PointXYZ>::iterator it = cloud->begin();
+    for (; it != cloud->end(); ++it) {
+        if (!contains(c2, *it))
+            inter.push_back(*it);
+    }
+
+    return inter;
 }
 
 pcl::PointCloud<pcl::PointXYZ> OcclusionCullingGPU::extractVisibleSurface(geometry_msgs::Pose location)

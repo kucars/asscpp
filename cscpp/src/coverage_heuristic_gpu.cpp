@@ -31,13 +31,9 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseArray.h>
 
-#if USE_CUDA == 1
-  #include <cscpp/occlusion_culling_gpu.h>
-#else
-  #include <cscpp/occlusion_culling.h>
-#endif
-
-#include "cscpp/coverage_path_planning_heuristic.h"
+#include <cscpp/occlusion_culling_gpu.h>
+#include <cscpp/occlusion_culling.h>
+#include "cscpp/coverage_path_planning_heuristic_gpu.h"
 #include "sspp/rviz_drawing_tools.h"
 #include "rviz_visual_tools/rviz_visual_tools.h"
 //#include <component_test/mesh_surface.h>
@@ -45,6 +41,10 @@ using namespace SSPP;
 
 int main( int argc, char **  argv)
 {
+    #if CUDA_FOUND == FALSE
+      std::cout<<"CUDA ON"; fflush(stdout);
+      return 0;
+    #endif
     ros::init(argc, argv, "path_planning");
     ros::NodeHandle nh;
 
@@ -64,11 +64,8 @@ int main( int argc, char **  argv)
     pcl::io::loadPCDFile<pcl::PointXYZ> (ros::package::getPath("cscpp")+"/pcd/etihad_nowheels_nointernal_scaled_newdensed.pcd", *originalCloudPtr);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr coveredCloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
-    #if USE_CUDA == 1
-      OcclusionCullingGPU occlusionCulling(nh,"etihad_nowheels_nointernal_scaled_newdensed.pcd");
-    #else
-      OcclusionCulling occlusionCulling(nh,"etihad_nowheels_nointernal_scaled_newdensed.pcd");
-    #endif
+    OcclusionCullingGPU occlusionCulling(nh,"etihad_nowheels_nointernal_scaled_newdensed.pcd");
+
     rviz_visual_tools::RvizVisualToolsPtr visualTools;
     visualTools.reset(new rviz_visual_tools::RvizVisualTools("map","/cscpp_visualisation"));
     visualTools->deleteAllMarkers();

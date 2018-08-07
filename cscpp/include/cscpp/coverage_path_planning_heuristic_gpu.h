@@ -23,6 +23,7 @@
 #define CPP_HEURISTICT_H_
 #include <stdio.h>
 #include <stdlib.h>
+#include <cscpp/occlusion_culling_gpu.h>
 #include <cscpp/occlusion_culling.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -100,9 +101,9 @@ public:
     int getHeuristicType();
 private:
     void loadOBJFile(const char* filename, std::vector<Eigen::Vector3f>& points, std::list<CGALTriangle>& triangles);
-    OcclusionCulling* occlussionCulling;
+    OcclusionCullingGPU* occlussionCulling;
 //     MeshSurface* meshSurface;
-    pcl::VoxelGridOcclusionEstimationT originalCloudFilteredVoxels;
+    pcl::VoxelGridOcclusionEstimationGPU originalCloudFilteredVoxels;
     bool debug;
     bool gradualVisualization;
     int heuristicType;

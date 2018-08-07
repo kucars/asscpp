@@ -19,7 +19,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   51 Franklin Steet, Fifth Floor, Boston, MA  02111-1307, USA.          *
  ***************************************************************************/
-#include "cscpp/coverage_path_planning_heuristic.h"
+#include "cscpp/coverage_path_planning_heuristic_gpu.h"
 
 namespace SSPP
 {
@@ -29,7 +29,11 @@ CoveragePathPlanningHeuristic::CoveragePathPlanningHeuristic(ros::NodeHandle & n
 
     loadOBJFile(collisionCheckModelP.c_str(), modelPoints, triangles);
     cgalTree             = new Tree1(triangles.begin(),triangles.end());
-    occlussionCulling    = new OcclusionCulling(nh, occlusionCullingModelN);
+    #if USE_CUDA == 1
+      occlussionCulling    = new OcclusionCullingGPU(nh, occlusionCullingModelN);
+    #else
+      occlussionCulling    = new OcclusionCulling(nh, occlusionCullingModelN);
+    #endif
 //     meshSurface          = new MeshSurface(nh);
     debug                = d;
     gradualVisualization = gradualV;
@@ -89,7 +93,7 @@ double CoveragePathPlanningHeuristic::pointCloudDiff(pcl::PointCloud<pcl::PointX
 {
     pcl::PointCloud<pcl::PointXYZ> coveredVoxels;
 
-    pcl::VoxelGridOcclusionEstimationT coveredCloudFilteredVoxels;
+    pcl::VoxelGridOcclusionEstimationGPU coveredCloudFilteredVoxels;
     coveredCloudFilteredVoxels.setInputCloud (globalCloudPtr);
     coveredCloudFilteredVoxels.setLeafSize (voxelResForConn, voxelResForConn, voxelResForConn);
     coveredCloudFilteredVoxels.initializeVoxelGrid();
@@ -221,7 +225,7 @@ void CoveragePathPlanningHeuristic::findClusterBB(pcl::PointCloud<pcl::PointXYZ>
     pcl::PointCloud<pcl::PointXYZ>::Ptr clusterPointsPtr (new pcl::PointCloud<pcl::PointXYZ>);
     clusterPointsPtr->points = clusterPoints.points;
     pcl::PointCloud<pcl::PointXYZ> tempClusterPoints;
-    pcl::VoxelGridOcclusionEstimationT grid;
+    pcl::VoxelGridOcclusionEstimationGPU grid;
     grid.setInputCloud (clusterPointsPtr);
     grid.setLeafSize (voxelResForConn, voxelResForConn, voxelResForConn);
     grid.initializeVoxelGrid();

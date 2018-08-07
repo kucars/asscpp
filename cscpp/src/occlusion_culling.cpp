@@ -288,8 +288,8 @@ pcl::PointCloud<pcl::PointXYZ> OcclusionCulling::extractVisibleSurface(geometry_
 
 
     }
-    FreeCloud.points = occlusionFreeCloud_local->points;
-    return FreeCloud;
+    freeCloud.points = occlusionFreeCloud_local->points;
+    return freeCloud;
 }
 float OcclusionCulling::calcCoveragePercent(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered)
 {

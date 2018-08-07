@@ -71,9 +71,11 @@ public:
     pcl::FrustumCullingTT fc;
     double maxAccuracyError, minAccuracyError;
     bool AccuracyMaxSet;
+    std::string frame_id;
 
     //methods
     OcclusionCulling(ros::NodeHandle & n, std::string modelName);
+    OcclusionCulling(ros::NodeHandle & n, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloudPtr);
     OcclusionCulling(std::string modelName);
     OcclusionCulling();
     ~OcclusionCulling();
@@ -87,8 +89,9 @@ public:
     void SSMaxMinAccuracy(std::vector<geometry_msgs::PoseArray> sensorsPoses);
     void visualizeFOV(geometry_msgs::Pose location);
     visualization_msgs::Marker drawLines(std::vector<geometry_msgs::Point> links, int id, int c_color[]);
-
+    bool contains(pcl::PointCloud<pcl::PointXYZ> c, pcl::PointXYZ p);
+    pcl::PointCloud<pcl::PointXYZ> pointsDifference(pcl::PointCloud<pcl::PointXYZ> c2);
 
 };
 
-#endif 
+#endif

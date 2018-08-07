@@ -39,7 +39,7 @@ endif()
 
 #Cuda related Flags
 #find_package(CUDA 8.0 REQUIRED EXACT)
-find_package(CUDA REQUIRED)
+find_package(CUDA)
 
 catkin_package(
    INCLUDE_DIRS include

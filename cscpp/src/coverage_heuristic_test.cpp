@@ -59,16 +59,15 @@ int main( int argc, char **  argv)
     std::vector<ros::Publisher> sensorsPoseSSPub;
     ros::Publisher octomapPub        = nh.advertise<octomap_msgs::Octomap>("octomap", 1);
 
+    std::string modelName = std::string(ros::package::getPath("cscpp")+"/pcd/etihad_nowheels_nointernal_scaled_newdensed.pcd"); 
+    //TODO: fix this
+    std::string modelBaseName = "etihad_nowheels_nointernal_scaled_newdensed.pcd";
     
     pcl::PointCloud<pcl::PointXYZ>::Ptr originalCloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::io::loadPCDFile<pcl::PointXYZ> (ros::package::getPath("cscpp")+"/pcd/etihad_nowheels_nointernal_scaled_newdensed.pcd", *originalCloudPtr);
+    pcl::io::loadPCDFile<pcl::PointXYZ> (modelName, *originalCloudPtr);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr coveredCloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
-    #if USE_CUDA == 1
-      OcclusionCullingGPU occlusionCulling(nh,"etihad_nowheels_nointernal_scaled_newdensed.pcd");
-    #else
-      OcclusionCulling occlusionCulling(nh,"etihad_nowheels_nointernal_scaled_newdensed.pcd");
-    #endif
+    OcclusionCulling occlusionCulling(nh,modelName);
     rviz_visual_tools::RvizVisualToolsPtr visualTools;
     visualTools.reset(new rviz_visual_tools::RvizVisualTools("map","/cscpp_visualisation"));
     visualTools->deleteAllMarkers();
@@ -112,8 +111,7 @@ int main( int argc, char **  argv)
     //******************************************************************
     double coverageTolerance=1.0, targetCov=10.0;
     std::string collisionCheckModelPath = ros::package::getPath("cscpp") + "/mesh/etihad_nowheels_nointernal_scaled_new.obj"; //bridge_translated, burj_arab_scaled
-    std::string occlusionCullingModelName = "etihad_nowheels_nointernal_scaled_newdensed.pcd";//bridge_translated_densed, burj_arab_scaled_densed
-    CoveragePathPlanningHeuristic coveragePathPlanningHeuristic(nh,collisionCheckModelPath,occlusionCullingModelName,false, true, InfoGainVolumetricH);
+    CoveragePathPlanningHeuristic coveragePathPlanningHeuristic(nh,collisionCheckModelPath,modelName,false, true, InfoGainVolumetricH);
     coveragePathPlanningHeuristic.setCoverageTarget(targetCov);
     coveragePathPlanningHeuristic.setCoverageTolerance(coverageTolerance);
     pathPlanner->setHeuristicFucntion(&coveragePathPlanningHeuristic);
@@ -158,9 +156,9 @@ int main( int argc, char **  argv)
     //print search space
     //***************************************************************
     ofstream ssRobotFile,ssRobotFile1;
-
-    std::string file_loc2 = ros::package::getPath("cscpp")+"/txt/"+"search_space_lkh_"+occlusionCullingModelName+"_dsscpp.txt";
-    std::string file_loc1 = ros::package::getPath("cscpp")+"/txt/"+"search_space_robot_"+occlusionCullingModelName+"_dsscpp.txt";
+   
+    std::string file_loc2 = ros::package::getPath("cscpp")+"/txt/"+"search_space_lkh_"+modelBaseName+"_dsscpp.txt";
+    std::string file_loc1 = ros::package::getPath("cscpp")+"/txt/"+"search_space_robot_"+modelBaseName+"_dsscpp.txt";
     ssRobotFile.open (file_loc1.c_str());
     ssRobotFile1.open (file_loc2.c_str());
 
@@ -208,7 +206,7 @@ int main( int argc, char **  argv)
     std::stringstream ss,cc;
     ss << targetCov;
     cc <<regGridConRad;
-    std::string file_loc = ros::package::getPath("cscpp")+"/txt/"+cc.str()+"_"+ss.str()+"%path_newtests1to4_"+occlusionCullingModelName+"scaledGPU_NewIG_Dynamic_dsscpp_tt.txt";
+    std::string file_loc = ros::package::getPath("cscpp")+"/txt/"+cc.str()+"_"+ss.str()+"%path_newtests1to4_"+modelBaseName+"scaledGPU_NewIG_Dynamic_dsscpp_tt.txt";
     pathFile.open (file_loc.c_str());
     octomap::OcTree* oct;
     std::vector<double> accuracyPerViewpointAvg;

@@ -38,8 +38,7 @@ OcclusionCulling::OcclusionCulling(ros::NodeHandle &n, std::string modelName):
 
    occlusionFreeCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
    FrustumCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
-   std::string path = ros::package::getPath("component_test");
-   pcl::io::loadPCDFile<pcl::PointXYZ> (path+"/src/pcd/"+model, *cloud);
+   pcl::io::loadPCDFile<pcl::PointXYZ> (model, *cloud);
    cloudCopy->points = cloud->points;
    voxelRes = 0.5;
    OriginalVoxelsSize=0.0;

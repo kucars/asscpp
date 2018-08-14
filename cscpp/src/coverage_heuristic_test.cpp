@@ -56,9 +56,9 @@ int main( int argc, char **  argv)
     ros::Publisher robotPosePub      = nh.advertise<geometry_msgs::PoseArray>("robot_pose", 10);
     ros::Publisher sensorPosePub     = nh.advertise<geometry_msgs::PoseArray>("sensor_pose", 10);
     ros::Publisher robotPoseSSPub    = nh.advertise<geometry_msgs::PoseArray>("SS_robot_pose", 10);
-    std::vector<ros::Publisher> sensorsPoseSSPub;
     ros::Publisher octomapPub        = nh.advertise<octomap_msgs::Octomap>("octomap", 1);
-
+    
+    std::vector<ros::Publisher> sensorsPoseSSPub;
     std::string modelName = std::string(ros::package::getPath("cscpp")+"/pcd/etihad_nowheels_nointernal_scaled_newdensed.pcd"); 
     //TODO: fix this
     std::string modelBaseName = "etihad_nowheels_nointernal_scaled_newdensed.pcd";
@@ -109,9 +109,10 @@ int main( int argc, char **  argv)
 
     //choose the coverage heuristic you want and set the params and assign it to the path planner
     //******************************************************************
-    double coverageTolerance=1.0, targetCov=10.0;
+    double coverageTolerance=1.0, targetCov=5.0;
+    bool gradualVisualization = false;
     std::string collisionCheckModelPath = ros::package::getPath("cscpp") + "/mesh/etihad_nowheels_nointernal_scaled_new.obj"; //bridge_translated, burj_arab_scaled
-    CoveragePathPlanningHeuristic coveragePathPlanningHeuristic(nh,collisionCheckModelPath,modelName,false, true, InfoGainVolumetricH);
+    CoveragePathPlanningHeuristic coveragePathPlanningHeuristic(nh,collisionCheckModelPath,modelName,false, gradualVisualization, InfoGainVolumetricH);
     coveragePathPlanningHeuristic.setCoverageTarget(targetCov);
     coveragePathPlanningHeuristic.setCoverageTolerance(coverageTolerance);
     pathPlanner->setHeuristicFucntion(&coveragePathPlanningHeuristic);
@@ -134,10 +135,10 @@ int main( int argc, char **  argv)
     //pathPlanner->generateRegularGrid(gridStartPose, gridSize,1.5,true,180,true);
     //pathPlanner->connectNodes();
 
-
+    std::string searchSpaceFileName = ros::package::getPath("cscpp")+"/txt/"+"generated_search_space_"+modelBaseName+"_dsscpp.txt";
     // 3- Generate Grid Samples (dynamically with different resolution generate grid connect clusters and re-do this until the disc. resolution is 0)
     pathPlanner->dynamicNodesGenerationAndConnection(gridStartPose,gridSize,4.5,1.5);
-
+    pathPlanner->saveSearchSpace(searchSpaceFileName.c_str());
     std::cout<<"\nSpace Generation took:"<<double(ros::Time::now().toSec() - timer_start.toSec())<<" secs"<<std::endl;
 
     //visualize and check the number of connections and search space
@@ -169,7 +170,6 @@ int main( int argc, char **  argv)
         yaw = tf::getYaw(qt);
         ssRobotFile << robotPoseSS.poses[j].position.x<<" "<<robotPoseSS.poses[j].position.y<<" "<<robotPoseSS.poses[j].position.z<<" "<<yaw<<"\n";
         ssRobotFile1 << j+1 <<" " <<robotPoseSS.poses[j].position.x<<" "<<robotPoseSS.poses[j].position.y<<" "<<robotPoseSS.poses[j].position.z<<"\n";
-
     }
 
 

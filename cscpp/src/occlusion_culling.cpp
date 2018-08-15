@@ -28,8 +28,6 @@ OcclusionCulling::OcclusionCulling(ros::NodeHandle &n, std::string modelName):
     model(modelName),
     fc(true)
 {
-//   original_pub = nh.advertise<sensor_msgs::PointCloud2>("original_point_cloud", 10);
-//   visible_pub = nh.advertise<sensor_msgs::PointCloud2>("occlusion_free_cloud", 100);
 
    fov_pub = n.advertise<visualization_msgs::MarkerArray>("fov", 10);
    cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
@@ -40,9 +38,10 @@ OcclusionCulling::OcclusionCulling(ros::NodeHandle &n, std::string modelName):
    FrustumCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
    pcl::io::loadPCDFile<pcl::PointXYZ> (model, *cloud);
    cloudCopy->points = cloud->points;
-   voxelRes = 0.5;
+   voxelRes = 0.5f;
    OriginalVoxelsSize=0.0;
    id=0.0;
+   viewEntropy=0.0;
    voxelFilterOriginal.setInputCloud (cloud);
    voxelFilterOriginal.setLeafSize (voxelRes, voxelRes, voxelRes);
    voxelFilterOriginal.initializeVoxelGrid();
@@ -67,7 +66,7 @@ OcclusionCulling::OcclusionCulling(ros::NodeHandle &n, std::string modelName):
 
    pcl::VoxelGrid<pcl::PointXYZ> voxelgrid;
    voxelgrid.setInputCloud (cloud);
-   voxelgrid.setLeafSize (0.5f, 0.5f, 0.5f);
+   voxelgrid.setLeafSize (voxelRes,voxelRes,voxelRes);
    voxelgrid.filter (*filtered_cloud);
 
    fc.setInputCloud (cloud);
@@ -76,14 +75,13 @@ OcclusionCulling::OcclusionCulling(ros::NodeHandle &n, std::string modelName):
    fc.setNearPlaneDistance (0.7);
    fc.setFarPlaneDistance (6.0);
 
+   AccuracyMaxSet = false;
 }
 
 OcclusionCulling::OcclusionCulling(ros::NodeHandle &n, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloudPtr):
     nh(n),
     fc(true)
 {
-//   original_pub = nh.advertise<sensor_msgs::PointCloud2>("original_point_cloud", 10);
-//   visible_pub = nh.advertise<sensor_msgs::PointCloud2>("occlusion_free_cloud", 100);
 
    fov_pub = nh.advertise<visualization_msgs::MarkerArray>("fov", 100);
    cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
@@ -95,10 +93,11 @@ OcclusionCulling::OcclusionCulling(ros::NodeHandle &n, pcl::PointCloud<pcl::Poin
    cloud->points = cloudPtr->points;
    cloudCopy->points = cloud->points;
     
-   voxelRes = 0.1;
+   voxelRes = 0.5f;
    frame_id = "world";
    OriginalVoxelsSize=0.0;
    id=0.0;
+   viewEntropy=0.0;
    voxelFilterOriginal.setInputCloud (cloud);
    voxelFilterOriginal.setLeafSize (voxelRes, voxelRes, voxelRes);
    voxelFilterOriginal.initializeVoxelGrid();
@@ -123,15 +122,16 @@ OcclusionCulling::OcclusionCulling(ros::NodeHandle &n, pcl::PointCloud<pcl::Poin
 
    pcl::VoxelGrid<pcl::PointXYZ> voxelgrid;
    voxelgrid.setInputCloud (cloud);
-   voxelgrid.setLeafSize (0.1f, 0.1f, 0.1f);
+   voxelgrid.setLeafSize (voxelRes, voxelRes, voxelRes);
    voxelgrid.filter (*filtered_cloud);
 
    fc.setInputCloud (cloud);
    fc.setVerticalFOV (45);
-   fc.setHorizontalFOV (60);
-   fc.setNearPlaneDistance (0.5);
-   fc.setFarPlaneDistance (8.0);
-
+   fc.setHorizontalFOV (58);
+   fc.setNearPlaneDistance (0.7);
+   fc.setFarPlaneDistance (6.0);
+   
+   AccuracyMaxSet = false;
 }
 
 OcclusionCulling::OcclusionCulling(std::string modelName):
@@ -143,13 +143,13 @@ OcclusionCulling::OcclusionCulling(std::string modelName):
     cloudCopy = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
     FrustumCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
 
-//    occlusionFreeCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
     std::string path = ros::package::getPath("component_test");
     pcl::io::loadPCDFile<pcl::PointXYZ> (path+"/src/pcd/"+model, *cloud);
     cloudCopy->points = cloud->points;
-    voxelRes = 0.5;
+    voxelRes = 0.5f;
     OriginalVoxelsSize=0.0;
     id=0.0;
+    viewEntropy=0.0;
     voxelFilterOriginal.setInputCloud (cloud);
     voxelFilterOriginal.setLeafSize (voxelRes, voxelRes, voxelRes);
     voxelFilterOriginal.initializeVoxelGrid();
@@ -173,7 +173,7 @@ OcclusionCulling::OcclusionCulling(std::string modelName):
     }
     pcl::VoxelGrid<pcl::PointXYZ> voxelgrid;
     voxelgrid.setInputCloud (cloud);
-    voxelgrid.setLeafSize (0.5f, 0.5f, 0.5f);
+    voxelgrid.setLeafSize (voxelRes, voxelRes, voxelRes);
     voxelgrid.filter (*filtered_cloud);
 
     fc.setInputCloud (cloud);
@@ -182,6 +182,7 @@ OcclusionCulling::OcclusionCulling(std::string modelName):
     fc.setNearPlaneDistance (0.7);
     fc.setFarPlaneDistance (6.0);
 
+    AccuracyMaxSet = false;
 }
 
 
@@ -195,13 +196,13 @@ OcclusionCulling::OcclusionCulling():
     cloudCopy = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);    
     FrustumCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
 
-//    occlusionFreeCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud <pcl::PointXYZ>);
     std::string path = ros::package::getPath("component_test");
     pcl::io::loadPCDFile<pcl::PointXYZ> (path+"/src/pcd/scaled_desktop.pcd", *cloud);
     cloudCopy->points = cloud->points;
-    voxelRes = 0.5;
+    voxelRes = 0.5f;
     OriginalVoxelsSize=0.0;
     id=0.0;
+    viewEntropy=0.0;
     voxelFilterOriginal.setInputCloud (cloud);
     voxelFilterOriginal.setLeafSize (voxelRes, voxelRes, voxelRes);
     voxelFilterOriginal.initializeVoxelGrid();
@@ -225,7 +226,7 @@ OcclusionCulling::OcclusionCulling():
     }
     pcl::VoxelGrid<pcl::PointXYZ> voxelgrid;
     voxelgrid.setInputCloud (cloud);
-    voxelgrid.setLeafSize (0.5f, 0.5f, 0.5f);
+    voxelgrid.setLeafSize (voxelRes, voxelRes, voxelRes);
     voxelgrid.filter (*filtered_cloud);
 
     fc.setInputCloud (cloud);
@@ -234,6 +235,7 @@ OcclusionCulling::OcclusionCulling():
     fc.setNearPlaneDistance (0.7);
     fc.setFarPlaneDistance (6.0);
 
+    AccuracyMaxSet = false;
 }
 OcclusionCulling::~OcclusionCulling()
 {
@@ -265,14 +267,6 @@ pcl::PointCloud<pcl::PointXYZ> OcclusionCulling::extractVisibleSurface(geometry_
     // 1 *****Frustum Culling*******
     pcl::PointCloud <pcl::PointXYZ>::Ptr output (new pcl::PointCloud <pcl::PointXYZ>);
     pcl::PointCloud<pcl::PointXYZ>::Ptr occlusionFreeCloud_local(new pcl::PointCloud<pcl::PointXYZ>);
-
-//    pcl::FrustumCullingTT fc (true);
-//    fc.setInputCloud (cloud);
-//    fc.setVerticalFOV (45);
-//    fc.setHorizontalFOV (58);
-//    fc.setNearPlaneDistance (0.7);
-//    fc.setFarPlaneDistance (6.0);
-
 
     Eigen::Matrix4f camera_pose;
     Eigen::Matrix3d Rd;
@@ -308,7 +302,6 @@ pcl::PointCloud<pcl::PointXYZ> OcclusionCulling::extractVisibleSurface(geometry_
     output->sensor_orientation_= quat;
     pcl::VoxelGridOcclusionEstimationT voxelFilter;
     voxelFilter.setInputCloud (output);
-    //voxelFilter.setLeafSize (0.03279f, 0.03279f, 0.03279f);
     voxelFilter.setLeafSize (voxelRes, voxelRes, voxelRes);
     voxelFilter.initializeVoxelGrid();
 
@@ -378,6 +371,7 @@ pcl::PointCloud<pcl::PointXYZ> OcclusionCulling::extractVisibleSurface(geometry_
     freeCloud.points = occlusionFreeCloud_local->points;
     return freeCloud;
 }
+
 float OcclusionCulling::calcCoveragePercent(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered)
 {
 
@@ -406,25 +400,7 @@ float OcclusionCulling::calcCoveragePercent(pcl::PointCloud<pcl::PointXYZ>::Ptr 
 
     float MatchedVoxels=0 ;//OriginalVoxelsSize=0, ;
 
-        // iterate over the entire original voxel grid to get the size of the grid
-//        for (int kk = min_b1.z (); kk <= max_b1.z (); ++kk)
-//        {
-//            for (int jj = min_b1.y (); jj <= max_b1.y (); ++jj)
-//            {
-//                for (int ii = min_b1.x (); ii <= max_b1.x (); ++ii)
-//                {
-//                    Eigen::Vector3i ijk1 (ii, jj, kk);
-//                    int index1 = voxelFilterOriginal.getCentroidIndexAt (ijk1);
-//                    if(index1!=-1)
-//                    {
-//                        OriginalVoxelsSize++;
-//                    }
-
-//                }
-//            }
-//        }
-
-        //iterate through the entire coverage grid to check the number of matched voxel between the original and the covered ones
+    //iterate through the entire coverage grid to check the number of matched voxel between the original and the covered ones
     for (int kk = min_b.z (); kk <= max_b.z (); ++kk)
     {
         for (int jj = min_b.y (); jj <= max_b.y (); ++jj)
@@ -500,50 +476,47 @@ double OcclusionCulling::calcAvgAccuracy(pcl::PointCloud<pcl::PointXYZ> pointClo
 
 void OcclusionCulling::SSMaxMinAccuracy(std::vector<geometry_msgs::PoseArray> sensorsPoses)
 {
-
-    pcl::PointCloud<pcl::PointXYZ> global, globalVis;
-    double max=0,min=std::numeric_limits<double>::max();
-
-    for (int i = 0 ; i<sensorsPoses.size(); i++)
+  std::cout<<"\nCalculating MinMax";fflush(stdout);
+  pcl::PointCloud<pcl::PointXYZ> global, globalVis;
+  double  max=std::numeric_limits<double>::min(),
+      min=std::numeric_limits<double>::max();
+  for (uint i = 0 ; i<sensorsPoses.size(); i++)
+  {
+    std::cout<<"\nProcessing Sensor Pose:"<<i;
+    for(uint j = 0; j<sensorsPoses[i].poses.size(); j++)
     {
-        for (int j = 0; j<sensorsPoses[i].poses.size(); j++)
-        {
-                tf::Quaternion qt(sensorsPoses[i].poses[j].orientation.x, sensorsPoses[i].poses[j].orientation.y, sensorsPoses[i].poses[j].orientation.z, sensorsPoses[i].poses[j].orientation.w) ;
-                double r, p, y;
-                tf::Matrix3x3(qt).getRPY(r, p, y);
-                //std::cout<<" camera: "<<r<<" "<<p<<" "<<y<<std::endl;
-                //std::cout<<" camera: "<<r*180/M_PI<<" "<<p*180/M_PI<<" "<<y*180/M_PI<<std::endl;
+      tf::Quaternion qt(sensorsPoses[i].poses[j].orientation.x, sensorsPoses[i].poses[j].orientation.y, sensorsPoses[i].poses[j].orientation.z, sensorsPoses[i].poses[j].orientation.w) ;
+      double r, p, y;
+      tf::Matrix3x3(qt).getRPY(r, p, y);
+      //std::cout<<" camera: "<<r<<" "<<p<<" "<<y<<std::endl;
+      //std::cout<<" camera: "<<r*180/M_PI<<" "<<p*180/M_PI<<" "<<y*180/M_PI<<std::endl;
 
-                pcl::PointCloud<pcl::PointXYZ> visible;
-                pcl::PointCloud<pcl::PointXYZ> transformedVisible;
+      pcl::PointCloud<pcl::PointXYZ> visible;
+      pcl::PointCloud<pcl::PointXYZ> transformedVisible;
 
-                visible += extractVisibleSurface(sensorsPoses[i].poses[j]);
+      visible += extractVisibleSurface(sensorsPoses[i].poses[j]);
 
-                transformedVisible = pointCloudViewportTransform(visible, sensorsPoses[i].poses[j]);
+      transformedVisible = pointCloudViewportTransform(visible, sensorsPoses[i].poses[j]);
 
-                global +=transformedVisible;
-                globalVis += visible;
+      global +=transformedVisible;
+      globalVis += visible;
 
-                for(int i=0; i<transformedVisible.points.size();i++){
-                    double temp = transformedVisible.points[i].x;//depth (it is at x axis because of the frustum culling camera pose requirement)
-                    //std::cout<<"depth are :  "<<temp<<"points\n";
-                    if(max<temp)
-                        max=temp;
-                    if(min>temp)
-                        min=temp;
-                }
-        }
-
+      for(uint i=0; i<transformedVisible.points.size();i++)
+      {
+        double temp = transformedVisible.points[i].x;//depth (it is at x axis because of the frustum culling camera pose requirement)
+        //std::cout<<"depth are :  "<<temp<<"points\n";
+        if(temp>max)
+          max=temp;
+        if(temp<min)
+          min=temp;
+      }
     }
-
-
-    maxAccuracyError = 0.0000285 * max*max;// the standard deviation equation is taken from paper
-    minAccuracyError = 0.0000285 * min*min;
-    std::cout<<"Maximum error: "<<maxAccuracyError<<" for the depth of: "<<max<<"\n";
-    std::cout<<"Minimum error: "<<minAccuracyError<<" for the depth of: "<<min<<"\n";
-
-    AccuracyMaxSet = true;
-
+  }
+  maxAccuracyError = 0.0000285 * max*max;// the standard deviation equation is taken from paper
+  minAccuracyError = 0.0000285 * min*min;
+  std::cout<<"Maximum error: "<<maxAccuracyError<<" for the depth of: "<<max<<"\n";
+  std::cout<<"Minimum error: "<<minAccuracyError<<" for the depth of: "<<min<<"\n";
+  AccuracyMaxSet = true;
 }
 
 void OcclusionCulling::transformPointMatVec(tf::Vector3 translation, tf::Matrix3x3 rotation, geometry_msgs::Point32 in, geometry_msgs::Point32& out)

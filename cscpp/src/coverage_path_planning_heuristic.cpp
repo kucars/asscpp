@@ -282,6 +282,22 @@ bool CoveragePathPlanningHeuristic::terminateConditionReached(Node *node)
     }
 }
 
+bool CoveragePathPlanningHeuristic::isConnectionConditionSatisfied(geometry_msgs::Pose temp, geometry_msgs::Pose S)
+{
+    //collision check
+    int intersectionsCount=0;
+    //parent
+    Point a(temp.position.x , temp.position.y ,temp.position.z );
+    //child
+    Point b(S.position.x, S.position.y, S.position.z);
+    Segment seg_query(a,b);
+    intersectionsCount = cgalTree->number_of_intersected_primitives(seg_query);
+    if(intersectionsCount==0)
+        return true;
+    else
+        return false;
+}
+
 bool CoveragePathPlanningHeuristic::isConnectionConditionSatisfied(SearchSpaceNode *temp, SearchSpaceNode *S)
 {
     //collision check
@@ -297,6 +313,7 @@ bool CoveragePathPlanningHeuristic::isConnectionConditionSatisfied(SearchSpaceNo
     else
         return false;
 }
+
 bool CoveragePathPlanningHeuristic::isFilteringConditionSatisfied(geometry_msgs::Pose pose, geometry_msgs::PoseArray& correspondingSensorPoses, double minDist, double maxDist, pcl::PointCloud<pcl::PointXYZ>& globalCloud, std::vector<pcl::PointCloud<pcl::PointXYZ> >& accuracyClusters, double accuracyThreshhold)
 {
     //model-node collision based filtering

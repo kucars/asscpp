@@ -91,6 +91,7 @@ public:
     void calculateHeuristic(Node *n);
     bool terminateConditionReached(Node *node);
     bool isConnectionConditionSatisfied(SearchSpaceNode *temp, SearchSpaceNode *S);
+    bool isConnectionConditionSatisfied(geometry_msgs::Pose pose,geometry_msgs::Pose pose);
     bool isFilteringConditionSatisfied(geometry_msgs::Pose pose, geometry_msgs::PoseArray &correspondingSensorPoses, double minDist, double maxDist, pcl::PointCloud<pcl::PointXYZ>& globalCloud, std::vector<pcl::PointCloud<pcl::PointXYZ> >& accuracyClusters, double accuracyThreshhold);
     void displayProgress(vector<Tree> tree);
     void displayGradualProgress(Node *node);

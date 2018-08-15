@@ -29,12 +29,7 @@ CoveragePathPlanningHeuristic::CoveragePathPlanningHeuristic(ros::NodeHandle & n
 
     loadOBJFile(collisionCheckModelP.c_str(), modelPoints, triangles);
     cgalTree             = new Tree1(triangles.begin(),triangles.end());
-    #if USE_CUDA == 1
-      occlussionCulling    = new OcclusionCullingGPU(nh, occlusionCullingModelN);
-    #else
-      occlussionCulling    = new OcclusionCulling(nh, occlusionCullingModelN);
-    #endif
-//     meshSurface          = new MeshSurface(nh);
+    occlussionCulling    = new OcclusionCullingGPU(nh, occlusionCullingModelN);
     debug                = d;
     gradualVisualization = gradualV;
     heuristicType        = hType;
@@ -284,6 +279,22 @@ bool CoveragePathPlanningHeuristic::terminateConditionReached(Node *node)
             displayGradualProgress(node);
         return false;
     }
+}
+
+bool CoveragePathPlanningHeuristic::isConnectionConditionSatisfied(geometry_msgs::Pose temp, geometry_msgs::Pose S)
+{
+    //collision check
+    int intersectionsCount=0;
+    //parent
+    Point a(temp.position.x , temp.position.y ,temp.position.z );
+    //child
+    Point b(S.position.x, S.position.y, S.position.z);
+    Segment seg_query(a,b);
+    intersectionsCount = cgalTree->number_of_intersected_primitives(seg_query);
+    if(intersectionsCount==0)
+        return true;
+    else
+        return false;
 }
 
 bool CoveragePathPlanningHeuristic::isConnectionConditionSatisfied(SearchSpaceNode *temp, SearchSpaceNode *S)

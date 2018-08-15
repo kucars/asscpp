@@ -31,11 +31,7 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseArray.h>
 
-#if USE_CUDA == 1
-  #include <cscpp/occlusion_culling_gpu.h>
-#else
-  #include <cscpp/occlusion_culling.h>
-#endif
+#include <cscpp/occlusion_culling.h>
 
 #include "cscpp/coverage_path_planning_heuristic.h"
 #include "sspp/rviz_drawing_tools.h"
@@ -137,20 +133,32 @@ int main( int argc, char **  argv)
 
     std::string searchSpaceFileName = ros::package::getPath("cscpp")+"/txt/"+"generated_search_space_"+modelBaseName+"_dsscpp.txt";
     // 3- Generate Grid Samples (dynamically with different resolution generate grid connect clusters and re-do this until the disc. resolution is 0)
+    
     pathPlanner->dynamicNodesGenerationAndConnection(gridStartPose,gridSize,4.5,1.5);
-    pathPlanner->saveSearchSpace(searchSpaceFileName.c_str());
+    //pathPlanner->saveSearchSpace(searchSpaceFileName.c_str());
+    //pathPlanner->loadSearchSpace(searchSpaceFileName.c_str());
     std::cout<<"\nSpace Generation took:"<<double(ros::Time::now().toSec() - timer_start.toSec())<<" secs"<<std::endl;
 
     //visualize and check the number of connections and search space
     //***************************************************************
+    std::cout<<"\nGetting Connections";fflush(stdout);
     std::vector<geometry_msgs::Point> searchSpaceConnections = pathPlanner->getConnections();
+    
+    std::cout<<"\n Search Space Connections:"<<searchSpaceConnections.size();
+    std::cout<<"\nDrawing SearchSpace";fflush(stdout);
     visualization_msgs::Marker connectionsMarker = drawLines(searchSpaceConnections,10000,3,100000000,0.03);
     std::vector<geometry_msgs::Point> searchSpaceNodes = pathPlanner->getSearchSpace();
     std::cout<<"\n\n---->>> Total Nodes in search Space ="<<searchSpaceNodes.size()<<std::endl;
+    
     std::vector<geometry_msgs::PoseArray> sensorsPoseSS;
     geometry_msgs::PoseArray robotPoseSS;
+    
+    std::cout<<"\nGetting Robot Poses";fflush(stdout);
     pathPlanner->getRobotSensorPoses(robotPoseSS,sensorsPoseSS);
+    std::cout<<"\nSetting MinMax";fflush(stdout);
     coveragePathPlanningHeuristic.setMaxMinSensorAccuracy(sensorsPoseSS);
+    
+    std::cout<<"\nVisualizing SearchSpace";fflush(stdout);
     visualization_msgs::Marker searchSpaceMarker = drawPoints(searchSpaceNodes,2,1000000);
     visualTools->publishSpheres(searchSpaceNodes,rviz_visual_tools::PURPLE,0.1,"search_space_nodes");
 
@@ -175,6 +183,7 @@ int main( int argc, char **  argv)
 
     //find the path and print it
     //******************************************************************
+    std::cout<<"\nStarting Search";fflush(stdout);
     ros::Time timer_restart = ros::Time::now();
     Node * path = pathPlanner->startSearch(start);
     ros::Time timer_end = ros::Time::now();

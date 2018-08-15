@@ -422,9 +422,10 @@ void OcclusionCullingGPU::SSMaxMinAccuracy(std::vector<geometry_msgs::PoseArray>
     pcl::PointCloud<pcl::PointXYZ> global, globalVis;
     double max=0,min=std::numeric_limits<double>::max();
 
-    for (int i = 0 ; i<sensorsPoses.size(); i++)
+    for (uint i = 0 ; i<sensorsPoses.size(); i++)
     {
-        for (int j = 0; j<sensorsPoses[i].poses.size(); j++)
+
+        for (uint j = 0; j<sensorsPoses[i].poses.size(); j++)
         {
                 tf::Quaternion qt(sensorsPoses[i].poses[j].orientation.x, sensorsPoses[i].poses[j].orientation.y, sensorsPoses[i].poses[j].orientation.z, sensorsPoses[i].poses[j].orientation.w) ;
                 double r, p, y;
@@ -442,7 +443,7 @@ void OcclusionCullingGPU::SSMaxMinAccuracy(std::vector<geometry_msgs::PoseArray>
                 global +=transformedVisible;
                 globalVis += visible;
 
-                for(int i=0; i<transformedVisible.points.size();i++){
+                for(uint i=0; i<transformedVisible.points.size();i++){
                     double temp = transformedVisible.points[i].x;//depth (it is at x axis because of the frustum culling camera pose requirement)
                     //std::cout<<"depth are :  "<<temp<<"points\n";
                     if(max<temp)

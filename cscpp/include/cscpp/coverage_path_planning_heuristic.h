@@ -32,13 +32,10 @@
 #include <CGAL/AABB_traits.h>
 #include <CGAL/Segment_3.h>
 #include <CGAL/AABB_triangle_primitive.h>
-//#include "fcl/math/vec_3f.h"
-//#include "fcl/math/transform.h"
 #include "sspp/ssppexception.h"
 #include "sspp/node.h"
 #include "sspp/heuristic_interface.h"
 #include "sspp/rviz_drawing_tools.h"
-// #include "component_test/mesh_surface.h"
 #include <octomap_msgs/Octomap.h>
 #include <octomap/ColorOcTree.h>
 #include <octomap/octomap.h>
@@ -90,6 +87,7 @@ public:
     void calculateHeuristic(Node *n);
     bool terminateConditionReached(Node *node);
     bool isConnectionConditionSatisfied(SearchSpaceNode *temp, SearchSpaceNode *S);
+    bool isConnectionConditionSatisfied(geometry_msgs::Pose temp, geometry_msgs::Pose S);
     bool isFilteringConditionSatisfied(geometry_msgs::Pose pose, geometry_msgs::PoseArray &correspondingSensorPoses, double minDist, double maxDist, pcl::PointCloud<pcl::PointXYZ>& globalCloud, std::vector<pcl::PointCloud<pcl::PointXYZ> >& accuracyClusters, double accuracyThreshhold);
     void displayProgress(vector<Tree> tree);
     void displayGradualProgress(Node *node);
